@@ -6,7 +6,14 @@
     </header>
     <section v-if="!ready" class="demo__loading">Seeding obligations…</section>
     <section v-else class="demo__screen">
-      <MemoPage />
+      <Suspense>
+        <template #default>
+          <MemoPage />
+        </template>
+        <template #fallback>
+          <p class="demo__loading">Loading memorandum…</p>
+        </template>
+      </Suspense>
     </section>
   </main>
 </template>
