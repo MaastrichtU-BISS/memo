@@ -104,7 +104,7 @@ const firstFailure = computed(() => {
   return `section ${si + 1} has a non-verbatim citation`
 })
 
-let persistTimer: any = null
+let persistTimer = null
 function persist() {
   if (persistTimer) clearTimeout(persistTimer)
   persistTimer = setTimeout(() => {
