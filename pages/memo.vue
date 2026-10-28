@@ -11,7 +11,16 @@
     <template v-else>
       <input v-model="title" class="memo-title" placeholder="Memorandum title" />
 
-      <div v-for="(s, si) in sections" :key="si" class="memo-section" :class="{ 'memo-section--bad': sectionBad(si) }">
+      <!--
+        The section frame: one section on screen at a time — heading, analysis
+        and its citations all in view. The tabs below the frame are the map;
+        Previous/Next walk it. An unfinished section is marked on the map.
+      -->
+      <div v-for="(s, si) in frameSections" :key="si" class="memo-section" :class="{ 'memo-section--bad': sectionBad(si) }">
+        <div class="memo-frame-title">
+          <span class="eyebrow">section {{ si + 1 }} of {{ sections.length }}</span>
+          <button class="memo-cite-del" title="remove section" @click="removeSection(si)">✕</button>
+        </div>
         <input v-model="s.heading" class="memo-heading" placeholder="Section heading" />
         <textarea v-model="s.content" class="memo-content" rows="3" placeholder="Compliance analysis…"></textarea>
 
@@ -35,7 +44,26 @@
         </div>
       </div>
 
-      <button class="memo-add-section" @click="addSection">+ section</button>
+      <div class="memo-frame-nav">
+        <button class="memo-frame-btn" :disabled="current === 0" @click="goTo(current - 1)">← Previous</button>
+        <div class="memo-tabs" role="tablist">
+          <button
+            v-for="(s, si) in sections"
+            :key="si"
+            class="memo-tab"
+            :class="{ 'memo-tab--current': si === current, 'memo-tab--bad': sectionBad(si) }"
+            role="tab"
+            :aria-selected="si === current"
+            :title="s.heading || 'untitled'"
+            @click="goTo(si)"
+          >
+            {{ si + 1 }}. {{ s.heading || 'untitled' }}
+          </button>
+        </div>
+        <button class="memo-frame-btn" :disabled="current >= sections.length - 1" @click="goTo(current + 1)">Next →</button>
+      </div>
+
+      <button class="memo-add-section" @click="addSectionAndGo">+ section</button>
 
       <div class="memo-actions">
         <span class="memo-gate mono" :class="{ 'memo-gate--ok': passed }">
@@ -94,6 +122,39 @@ function addSection() {
   draft[sections.value.length - 1] = { obligation_id: '', quote_text: '' }
 }
 
+// The section in the frame: one on screen, everything about it in view.
+const current = ref(0)
+const frameSections = computed(() => sections.value.slice(current.value, current.value + 1))
+
+// The frame follows the sections: a removal keeps it on a live one.
+watch(
+  () => sections.value.length,
+  (count) => {
+    if (current.value >= count) current.value = Math.max(0, count - 1)
+  },
+)
+
+function goTo(index) {
+  if (index >= 0 && index < sections.value.length) current.value = index
+}
+
+function addSectionAndGo() {
+  addSection()
+  current.value = sections.value.length - 1
+}
+
+function removeSection(index) {
+  sections.value.splice(index, 1)
+  const shifted = {}
+  for (const key of Object.keys(draft)) {
+    const k = Number(key)
+    if (k < index) shifted[k] = draft[k]
+    else if (k > index) shifted[k - 1] = draft[k]
+  }
+  for (const key of Object.keys(draft)) delete draft[key]
+  Object.assign(draft, shifted)
+}
+
 const passed = computed(() => sections.value.length > 0 && sections.value.every((_, si) => !sectionBad(si)))
 const firstFailure = computed(() => {
   const si = sections.value.findIndex((_, i) => sectionBad(i))
@@ -150,6 +211,16 @@ watch([title, sections], persist, { deep: true })
 .memo-cite-add:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .memo-add-section { font-size: 12px; padding: 7px 14px; border: 1px dashed var(--line); border-radius: 6px; background: none; color: var(--ink-2); cursor: pointer; margin-bottom: 18px; }
+
+/* The frame's map: previous, the sections as tabs, next. */
+.memo-frame-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.memo-frame-nav { display: flex; align-items: center; gap: 10px; margin: 4px 0 14px; }
+.memo-tabs { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; justify-content: center; }
+.memo-frame-btn { font-size: 12px; font-weight: 600; padding: 6px 14px; border: 1px solid var(--line); border-radius: 6px; background: var(--white); color: var(--ink-2); cursor: pointer; flex-shrink: 0; }
+.memo-frame-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.memo-tab { font: inherit; font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--white); color: var(--muted); cursor: pointer; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.memo-tab--current { border-color: var(--vermillion); background: var(--vermillion); color: #fff; }
+.memo-tab--bad:not(.memo-tab--current) { border-color: #B6371A; color: #B6371A; }
 .memo-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .memo-gate { font-size: 11px; color: var(--muted); }
 .memo-gate--ok { color: #5F7A3A; }
