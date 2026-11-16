@@ -1,0 +1,78 @@
+{
+  "package_id": "bluelab.memo",
+  "package_version": "0.1.0",
+  "package_type": "legalblocks.module_package",
+  "artifact_types": [
+    {
+      "id": "bluelab.memo",
+      "label": "memo",
+      "color": "#9E4F4F",
+      "short": "memo"
+    }
+  ],
+  "modules": [
+    {
+      "module_id": "memoDraft",
+      "label": "Client Memorandum",
+      "category": "nlp",
+      "glyph": "✒",
+      "family": "processing",
+      "display": {
+        "sub": "memo · citation-enforced sections",
+        "note": "Every section must cite an obligation; quotes verbatim-checked against source"
+      },
+      "inputs": [
+        {
+          "port_id": "obligation_set",
+          "artifact_type": "bluelab.obligation_set"
+        },
+        {
+          "port_id": "obligation_map",
+          "artifact_type": "bluelab.obligation_map",
+          "capabilities": [
+            "optional"
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "port_id": "memo",
+          "artifact_type": "bluelab.memo"
+        }
+      ],
+      "configuration": {
+        "parameters": [
+          {
+            "name": "memo_endpoint",
+            "type": "artifact_endpoint",
+            "label": "Memo store",
+            "artifact_key": "bl-memo",
+            "match": "exact",
+            "default": {
+              "adapter": "local"
+            }
+          }
+        ]
+      },
+      "execution": {
+        "type": "backend",
+        "entrypoint": "memo.ts"
+      },
+      "permissions": [
+        "read_documents"
+      ],
+      "requires_auth": true,
+      "provides_screen": {
+        "screen_type_id": "bluelab.memo",
+        "label": "Memorandum",
+        "glyph": "✒",
+        "desc": "Draft the client memo; each section must cite a verbatim obligation (Step 5).",
+        "needs": [
+          "bluelab.memo"
+        ],
+        "optional": [],
+        "page_template": "pages/memo.vue"
+      }
+    }
+  ]
+}
